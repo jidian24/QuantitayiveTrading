@@ -1,0 +1,121 @@
+
+Interference Analysis API Sample
+        
+
+          Description
+        This sample demonstrates the functions used to calculate interference analysis in an assembly.
+          Code Samples
+        
+
+
+VBA
+
+To use this sample have an assembly open that contains mutiple parts. Depending on preselected parts when running the sample, you'll get different results. If one part is selected, that one part will be checked against the rest of the assembly. If more than one part is selected you have the choice of checking for interference among the selected parts or checking the selected parts against the rest of the assembly. If no parts are selected it will check every part against every other part.Public Sub Interference()
+    Dim oDoc As AssemblyDocument
+    Set oDoc = ThisApplication.ActiveDocument
+    
+    ' Find all selected occurrences and add them to an ObjectCollection.
+    Dim oSelectedOccs As ObjectCollection
+    Set oSelectedOccs = ThisApplication.TransientObjects.CreateObjectCollection
+    Dim i As Long
+    For i = 1 To oDoc.SelectSet.Count
+        If oDoc.SelectSet.Item(i).Type = kComponentOccurrenceObject Then
+            oSelectedOccs.Add oDoc.SelectSet.Item(i)
+        End If
+    Next
+    
+    ' If no occurrences are selected check for interference of
+    ' all parts against all parts.  If one occurrence is selected, check
+    ' for interference between that occurrence and the rest of the assembly.
+    ' If more than one occurrence is selected let the user decide if it
+    ' should check for interference between the parts in the selection or
+    ' between the selected parts and the rest of the assembly.
+    Dim oResults As InterferenceResults
+    Dim oCheckSet As ObjectCollection
+    Set oCheckSet = ThisApplication.TransientObjects.CreateObjectCollection
+    If oSelectedOccs.Count = 0 Then
+        ' Add all occurrences to the object collection
+        Dim oOcc As ComponentOccurrence
+        For Each oOcc In oDoc.ComponentDefinition.Occurrences
+            oCheckSet.Add oOcc
+        Next
+        
+        ' Get the interference between everything.
+        Set oResults = oDoc.ComponentDefinition.AnalyzeInterference(oCheckSet)
+    ElseIf oSelectedOccs.Count = 1 Then
+        ' Add all occurrences except the selected occurrence to the object collection.
+        For Each oOcc In oDoc.ComponentDefinition.Occurrences
+            If Not oOcc Is oSelectedOccs.Item(1) Then
+                oCheckSet.Add oOcc
+            End If
+        Next
+        
+        ' Get the interference between the selected occurrence everything else.
+        Set oResults = oDoc.ComponentDefinition.AnalyzeInterference(oSelectedOccs, oCheckSet)
+    Else
+        If MsgBox("Check interference between selected occurrences and all other occurrences?", vbYesNo + vbQuestion) = vbYes Then
+            ' Add all occurrences except the selected occurrences to the object collection.
+            For Each oOcc In oDoc.ComponentDefinition.Occurrences
+                ' Check to see if this occurrences is already selected.
+                Dim bSelected As Boolean
+                bSelected = False
+                For i = 1 To oSelectedOccs.Count
+                    If oSelectedOccs.Item(i) Is oOcc Then
+                        bSelected = True
+                        Exit For
+                    End If
+                Next
+                
+                If Not bSelected Then
+                    oCheckSet.Add oOcc
+                End If
+            Next
+           
+            ' Check interference between the selected items.
+            Set oResults = oDoc.ComponentDefinition.AnalyzeInterference(oSelectedOccs, oCheckSet)
+        Else
+            ' Check interference between the selected items.
+            Set oResults = oDoc.ComponentDefinition.AnalyzeInterference(oSelectedOccs)
+        End If
+    End If
+    
+    If oResults.Count = 1 Then
+        MsgBox "There is 1 interference."
+    ElseIf oResults.Count > 1 Then
+        MsgBox "There are " & oResults.Count & " interferences."
+    End If
+    
+    If oResults.Count > 0 Then
+        Dim oHS1 As HighlightSet
+        Set oHS1 = oDoc.HighlightSets.Add
+        oHS1.Color = ThisApplication.TransientObjects.CreateColor(255, 0, 0)
+        Dim oHS2 As HighlightSet
+        Set oHS2 = oDoc.HighlightSets.Add
+        oHS2.Color = ThisApplication.TransientObjects.CreateColor(0, 255, 0)
+        
+        For i = 1 To oResults.Count
+            oHS1.Clear
+            oHS2.Clear
+            oHS1.AddItem oResults.Item(i).OccurrenceOne
+            oHS2.AddItem oResults.Item(i).OccurrenceTwo
+            MsgBox "Occurrences are highlighted from interference " & i
+        Next
+        
+        oHS1.Clear
+        oHS2.Clear
+    Else
+        MsgBox "There is no interference."
+    End If
+End Sub
+
+
+
+
+
+
+                © Copyright 2022 Autodesk, Inc.
+              
+Comment on this page.
+
+
+

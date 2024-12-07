@@ -13,13 +13,13 @@ import wind_library
  
 # 从ccxt获取K线数据创建okex交易所
 def ccxt_get_kline(exchange,Transaction_type,kline_period):
-    exchange = ccxt.gate () # default id
-    id = exchange     # 设置id为'gate'
+    # exchange = ccxt.gate () # default id
+    # id = exchange     # 设置id为'gate'
     btcchina = eval ('ccxt.%s ()' % exchange)     # 使用eval函数动态创建参数指定的交易所实例
-    gdax = getattr (ccxt, 'gate') ()        # 使用getattr函数获取gate交易所实例
+    gdax = getattr (ccxt, 'okx') ()        # 使用getattr函数获取gate交易所实例
 
     # from variable id          # 从变量id获取交易所
-    exchange_id = 'gate'
+    exchange_id = 'okx'
     exchange_class = getattr(ccxt, exchange)     # 通过getattr函数获取交易所类
     exchange = exchange_class({     # 创建交易所实例
         'apiKey': 'YOUR_API_KEY',
@@ -52,12 +52,12 @@ def ccxt_get_kline(exchange,Transaction_type,kline_period):
                     print('{}\n{}\n{}'.format(df_kl.shape,df_kl.head(1),df_kl.tail(1) ))    #屏幕打印表格首尾行
     return(df_kl)
 
+ccxt_get_kline('gate','swap','1d')            
             
-            
-            print('leng of table =' + str(len(kldata)))
-        #写入文件
-        df_kl.to_csv(os.path.join('..','data',exchange_id + '_' + symbol.replace('/','_') + '_' + kline_type + '.csv'),index=False)
-           
+        #     print('leng of table =' + str(len(kldata)))
+        # #写入文件
+        # df_kl.to_csv(os.path.join('..','data',exchange_id + '_' + symbol.replace('/','_') + '_' + kline_type + '.csv'),index=False)
+'''
         
         
 
@@ -99,8 +99,8 @@ def get_symbols_all_exchanges():
         for symbol in list_symbols:
             #判定df表中的index是否存在与变量symbol等值的项，如果存在则在df表中的symbol值行exchang值列写入数值1，如果不存在则在df表中的symbol值行exchang值列写入数值0。
             
-    list_symbols = unique_sort_list(list_symbols)       #列表去重排序处理
-    df.at['ADF', 'Low'] = 1
+        # list_symbols = unique_sort_list(list_symbols)       #列表去重排序处理
+    # df.at['ADF', 'Low'] = 1
     return(list_symbols)
 # 找到有期货的交易所
 #df = df[df['future']]
@@ -139,3 +139,5 @@ while True:
         time.sleep(exchange.rateLimit / 1000)
 
     time.sleep(120)
+
+'''

@@ -1,65 +1,118 @@
-import ccxt
-import pandas as pd
+import pydoc
+import importlib
 import os
-from openpyxl import Workbook
-from openpyxl.utils.dataframe import dataframe_to_rows
-from openpyxl.styles import Font
 
-def get_symbols_all_exchanges():
-    # 获取所有交易所列表
-    list_exchanges = ccxt.exchanges
-    list_symbols = []
-    df = pd.DataFrame()
+def get_package_help_info(package_name):
+    try:
+        package = importlib.import_module(package_name)
+    except ModuleNotFoundError:
+        print(f"Error: Package '{package_name}' not found.")
+        return
 
-    # 遍历每个交易所
-    for exchange_id in list_exchanges:
-        print('正在获取交易所信息---'+ exchange_id)
-        try:
-            # 创建交易所对象
-            exchange = getattr(ccxt, exchange_id)()
-            # 获取该交易所支持的交易品种
-            markets = exchange.load_markets()
-            symbols = list(markets.keys())
-            list_symbols.extend(symbols)
+    with open(f'{package_name}_help.txt', 'w', newline='', encoding='utf-8-sig') as f:
+        for name in dir(package):
+            obj = getattr(package, name)
+            if callable(obj) or hasattr(obj, '__module__'):
+                try:
+                    help_content = pydoc.render_doc(obj)
+                    f.write(f"Help for {name}:\n{help_content}\n\n")
+                except Exception as e:
+                    print(f"Error rendering help for {name}: {e}")
 
-            # 如果交易所正常返回数据则新增一列列名为交易所名
-            df[exchange_id] = 0
+# 示例用法：获取vectorbt库中的帮助信息
+package_name = 'vectorbt'
+get_package_help_info(package_name)
+print(f"Help information for package '{package_name}' has been written to '{package_name}_help.txt'.")
 
-            # 遍历每个交易品种
-            for symbol in symbols:
-                # 筛选出包含'/USDT'的交易对
-                if '/USDT' in symbol:
-                    # 如果交易对不在DataFrame的索引中，则添加一行并初始化为0
-                    if symbol not in df.index:
-                        df.loc[symbol] = 0
-                    # 将支持该交易对的交易所在DataFrame中标记为1
-                    df.loc[symbol, exchange_id] = 1
 
-        except Exception as e:
-            # 捕获异常并输出错误信息
-            print(f"Failed to connect to or access data from exchange: {exchange_id}. Error: {e}. Skipping...")
-            continue
 
-    # 计算每一行的数值总和
-    df['Sum'] = df.sum(axis=1)
-    
-    return df
 
-# 调用函数获取所有交易所支持的交易品种信息
-symbols_df = get_symbols_all_exchanges()
 
-# 创建一个新的Excel文件
-wb = Workbook()
-ws = wb.active
+import vectorbt
+import pydoc    # 生成Python模块的文档
 
-# 将DataFrame写入Excel文件，并设置红色字体
-for r in dataframe_to_rows(symbols_df, index=True, header=True):
-    ws.append(r)
+class_names = [vectorbt.utils, vectorbt.data, vectorbt.generic, vectorbt.indicators, vectorbt.signals, vectorbt.records, vectorbt.portfolio, vectorbt.labels]
 
-for row in ws.iter_rows(min_row=2, min_col=2, max_row=ws.max_row, max_col=ws.max_column):
-    for cell in row:
-        if cell.value == 1:
-            cell.font = Font(color="FF0000")  # 设置文字颜色为红色
+with open('vectorbt_class_help.txt', 'w', newline='', encoding='utf-8-sig') as f:
+    for class_name in class_names:
+        help_content = pydoc.render_doc(class_name)
+        f.write(f"Help for {class_name.__name__}:\n{help_content}\n\n")
+# 把以上代码改写成函数：get_package_help—_info(package_name)
+# 1. 自动分析package_name库中包含的所有类，函数
+# 2. 输出package_name库中包含的所有类，函数的帮助信息到文件
+# 3. 文件名的格式为：package_name + "_help.txt"
 
-# 保存Excel文件
-wb.save(os.path.join('..','data','all_symbols' + '.xlsx'))
+import vectorbt
+import pydoc
+
+class_names = [vectorbt.utils, vectorbt.data, vectorbt.generic, vectorbt.indicators, vectorbt.signals, vectorbt.records, vectorbt.portfolio, vectorbt.labels]
+
+with open('vectorbt_class_help.txt', 'w', encoding='utf-8') as f:
+    for class_name in class_names:
+        help_content = pydoc.render_doc(class_name)
+        f.write(f"Help for {class_name.__name__}:\n{help_content}\n\n")
+
+
+
+import pydoc
+import vectorbt
+
+class_names = [vectorbt.utils, vectorbt.data, vectorbt.generic, vectorbt.indicators, vectorbt.signals, vectorbt.records, vectorbt.portfolio, vectorbt.labels]
+
+with open('vectorbt_class_help.txt', 'w', encoding='utf-8') as f:  # 使用UTF-8编码打开文件
+    for class_name in class_names:
+        help_content = pydoc.render_doc(class_name)
+        f.write(f"Help for {class_name.__name__}:\n{help_content}\n\n")
+
+
+import pydoc
+import sys
+import vectorbt
+# 保存原有的 pager 函数
+old_pager = pydoc.pager
+
+# 定义一个新的 pager 函数,直接打印输出
+def new_pager(text):
+    sys.stdout.write(text)
+
+# 临时替换 pager 函数
+pydoc.pager = new_pager
+help(vectorbt.utils)
+
+# 还原原有的 pager 函数
+pydoc.pager = old_pager
+
+
+
+
+import vectorbt
+
+class_names = [vectorbt.utils, vectorbt.data, vectorbt.generic, vectorbt.indicators, vectorbt.signals, vectorbt.records, vectorbt.portfolio, vectorbt.labels]
+
+with open('vectorbt_class_help.txt', 'w') as f:
+    for class_name in class_names:
+        help_content = help(class_name)
+        f.write(f"Help for {class_name.__name__}:\n{help_content}\n\n")
+        
+        
+        
+        
+import vectorbt
+
+class_names = [vectorbt.utils, vectorbt.data, vectorbt.generic, vectorbt.indicators, vectorbt.signals, vectorbt.records, vectorbt.portfolio, vectorbt.labels]
+
+with open('vectorbt_class_help.txt', 'w') as f:
+    for class_name in class_names:
+        help_content = f"Help for {class_name.__name__}:\n{help(class_name)}\n\n"
+        f.write(help_content)
+
+
+
+import vectorbt
+
+class_names = [vectorbt.utils, vectorbt.data, vectorbt.generic, vectorbt.indicators, vectorbt.signals, vectorbt.records, vectorbt.portfolio, vectorbt.labels]
+
+with open('vectorbt_class_help.txt', 'w') as f:
+    for class_name in class_names:
+        help_content = f"Help for {class_name.__name__}:\n{help(class_name)}\n\n"   #这句会导致程序在终端分页输出文字需人工翻页不符合要求，要求相应帮助文档的文字内容直接赋值给变量。请改写。
+        f.write(help_content)

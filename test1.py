@@ -1,47 +1,53 @@
-import ccxt
+import numpy as np
 import pandas as pd
-import os
+import wind_library
+import vectorbt as vbt
 
-def get_symbols_all_exchanges():
-    # 获取所有交易所列表
-    list_exchanges = ccxt.exchanges
-    list_symbols = []
-    # 创建一个空的DataFrame，列名为所有交易所
-    df = pd.DataFrame(columns=list_exchanges)
+# 获取Gate.io交易所BTC/USDT的1小时K线数据
+ohlcv= wind_library.get_ccxt_exchange_kline('gate', 'BTC/USDT', 'spot', '1h', 200)
+price = ohlcv.close
+atr = vbt.ATR.run(ohlcv.high,ohlcv.low,price , window=14)
+atr.plot()
+import numpy as np
+import pandas as pd
+import vectorbt as vbt
+from vectorbt import Portfolio
 
-    # 遍历每个交易所
-    for exchange_id in list_exchanges:
-        print('正在获取交易所信息---'+ exchange_id)
-        try:
-            # 创建交易所对象
-            exchange = getattr(ccxt, exchange_id)()
-            # 获取该交易所支持的交易品种
-            markets = exchange.load_markets()
-            symbols = list(markets.keys())
-            list_symbols.extend(symbols)
+# 假设你有一个DataFrame 'price'，其中包含了某个资产的历史价格，列名为'Close'
+# 这里用随机数据生成一个示例DataFrame
+np.random.seed(42)
+price = pd.DataFrame({
+    'Close': np.random.normal(100, 10, 1000)  # 假设价格数据
+})
 
-            # 遍历每个交易品种
-            for symbol in symbols:
-                # 筛选出包含'/USDT'的交易对
-                if '/USDT' in symbol:
-                    # 如果交易对不在DataFrame的索引中，则添加一行并初始化为0
-                    if symbol not in df.index:
-                        df.loc[symbol] = 0
-                    # 将支持该交易对的交易所在DataFrame中标记为1
-                    df.loc[symbol, exchange_id] = 1
+# 计算ATR指标
+# atr_length 是ATR的周期长度，通常设置为14
+# atr_multi 是用于生成交易信号的ATR倍数
+atr_length = 14
+atr_multi = 1.5
+atr = vbt.ATR(length=atr_length).run(price['Close'])
 
-        except Exception as e:
-            # 捕获异常并输出错误信息
-            print(f"Failed to connect to or access data from exchange: {exchange_id}. Error: {e}. Skipping...")
-            continue
+# 定义交易信号
+# 生成买入信号：当收盘价高于收盘价+ATR倍数时
+entries = price['Close'] > price['Close'].shift(1) + atr * atr_multi
 
-    # 计算每一行的数值总和
-    df['Sum'] = df.sum(axis=1)
-    
-    return df
+# 生成卖出信号：当收盘价低于收盘价-ATR倍数时
+exits = price['Close'] < price['Close'].shift(1) - atr * atr_multi
 
-# 调用函数获取所有交易所支持的交易品种信息
-symbols_df = get_symbols_all_exchanges()
-# 打印DataFrame
-print(symbols_df)
-symbols_df.to_csv(os.path.join('..','data','all_symbols' + '.csv'),index=True)  #表格写入csv文件
+# 应用交易逻辑，确保信号不会连续反转
+# entries = vbt.signals.TaSignal(entries, sig lookback=1, max_pos=1).run()
+# exits = vbt.signals.TaSignal(exits, sig lookback=1, max_pos=1).run()
+
+# 创建投资组合
+# 使用'reverse'参数来反转卖出信号，因为我们想要在价格下跌时卖出
+pf = vbt.Portfolio.from_signals(price, entries, exits, fees=0.001, freq='1d', reverse=True)
+
+# 计算投资组合的收益
+results = pf.stats()
+
+# 打印结果
+print(results)
+
+# 如果你想可视化投资组合的表现
+# pf.plot()
+
